@@ -4,6 +4,6 @@
 
 ## Členové týmu
 
-Aneta Dufková (xdufko02)
-Michal Janů (xjanum03)
-Jakub Jochlík (xjochl00)
+Aneta Dufková (xdufko02)  
+Michal Janů (xjanum03)  
+Jakub Jochlík (xjochl00)  
