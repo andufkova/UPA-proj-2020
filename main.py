@@ -1,24 +1,49 @@
 import requests
 import datetime
+import argparse
+import re
 
 from noSQL import PymongoDatabase
 
 #global variables and constants
 BANK_BASE_URL = "https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/rok.txt?rok="
-LAST_4_MONTHS = 4  # according to UPA project description, we should be getting last 4 months of data
+LAST_4_MONTHS = 4   # if no arguments is given, or argument is invalid, get last 4 months of data
 
 
-def get_data_from_bank():
+def get_data_from_bank(arguments):
+    if arguments[0].month is None:
+        return get_last_4_months()
+    else:
+        date = arguments[0].month.split('.')
+        return get_4_months(date)
+
+def get_last_4_months():
     today = datetime.datetime.today()
 
     bank_url = BANK_BASE_URL + str(today.year)
-    result = requests.get(url=bank_url)
-    bank_currency_data = result.text
+    bank_currency_data = requests.get(url=bank_url).text
 
-    if today.month < LAST_4_MONTHS:     # handle situation, when months from last year are needed
+    if today.month < LAST_4_MONTHS:  # handle situation, when months from last year are needed
         bank_url = BANK_BASE_URL + str(today.year - 1)
         result = requests.get(url=bank_url).text
-        bank_currency_data = result + "\n".join(bank_currency_data.split("\n")[1:])   # remove header from second GET call so we dont have it twice in our data
+        bank_currency_data = result + "\n".join(bank_currency_data.split("\n")[1:])  # remove header from second GET call so we dont have it twice in our data
+
+    return bank_currency_data
+
+def get_4_months(date):
+    """
+    :param date: tells me which months are being requested in format [month, year] as strings
+    """
+    today = datetime.datetime.today()
+
+    bank_url = BANK_BASE_URL + str(date[1])
+    bank_currency_data = requests.get(url=bank_url).text
+
+    if int(date[0]) >= 9 and int(date[1]) + 1 <= today.year:
+        bank_url = BANK_BASE_URL + str(int(date[1]) + 1)
+        result = requests.get(url=bank_url).text
+        bank_currency_data = bank_currency_data + "\n".join(
+            result.split("\n")[1:])  # remove header from second GET call so we dont have it twice in our
 
     return bank_currency_data
 
@@ -43,6 +68,8 @@ def transform_text_data_to_dictionary(data):
         for currency_column in bank_data.split('\n')[0].split('|'):
             if key in currency_column:
                 for line in bank_data.split('\n')[1:-1]:
+                    if "Datum" in line: # for some reason, for some months bank does not provide data for same currencies... skip those data
+                        return dict_data
                     line_split = line.split('|')
                     dict_data[key].append((line_split[0], line_split[key_index]))
                 break
@@ -51,10 +78,31 @@ def transform_text_data_to_dictionary(data):
 
     return dict_data
 
-if __name__ == "__main__":
-    bank_data = None
-    bank_data = get_data_from_bank()
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--month', metavar='T', type=str, help='select first of 4 months to select data from')
+    args = parser.parse_known_args()
+
+    if args[0].month is None:
+        return args
+    else:
+        month = args[0].month.strip()
+        if re.match(r"^[0]*[1-9][0-2]*\.[1-2][0-9]{3}$", month):
+            today = datetime.datetime.today()
+            month = month.split('.')
+            if 1 <= int(month[0]) <= 12 and int(month[1]) <= today.year:
+                pass
+            else:
+                args[0].month = None
+
+    return args
+
+if __name__ == "__main__":
+    args = parse_args()
+
+    bank_data = get_data_from_bank(args)
     bank_data = transform_text_data_to_dictionary(bank_data)
 
     pymongo = PymongoDatabase()
