@@ -13,14 +13,14 @@ def get_data_from_bank():
 
     bank_url = BANK_BASE_URL + str(today.year)
     result = requests.get(url=bank_url)
-    bank_currency__data = result.text
+    bank_currency_data = result.text
 
     if today.month < LAST_4_MONTHS:     # handle situation, when months from last year are needed
         bank_url = BANK_BASE_URL + str(today.year - 1)
         result = requests.get(url=bank_url).text
-        bank_currency__data = result + "\n".join(bank_currency__data.split("\n")[1:])   # remove header from second GET call so we dont have it twice in our data
+        bank_currency_data = result + "\n".join(bank_currency_data.split("\n")[1:])   # remove header from second GET call so we dont have it twice in our data
 
-    return bank_currency__data
+    return bank_currency_data
 
 def transform_text_data_to_dictionary(data):
     """
