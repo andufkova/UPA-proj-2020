@@ -11,10 +11,10 @@ LAST_4_MONTHS = 4   # if no arguments is given, or argument is invalid, get last
 
 
 def get_data_from_bank(arguments):
-    if arguments[0].month is None:
+    if arguments[0].date is None:
         return get_last_4_months()
     else:
-        date = arguments[0].month.split('.')
+        date = arguments[0].date.split('.')
         return get_4_months(date)
 
 def get_last_4_months():
@@ -82,20 +82,20 @@ def transform_text_data_to_dictionary(data):
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--month', metavar='T', type=str, help='select first of 4 months (format MM.YYYY) to select data from')
+    parser.add_argument('--date', metavar='T', type=str, help='select first of 4 months (format MM.YYYY) to select data from')
     args = parser.parse_known_args()
 
-    if args[0].month is None:
+    if args[0].date is None:
         return args
     else:
-        month = args[0].month.strip()
-        if re.match(r"^[0]*[1-9][0-2]*\.[1-2][0-9]{3}$", month):
+        date = args[0].date.strip()
+        if re.match(r"^[0]*[1-9][0-2]*\.[1-2][0-9]{3}$", date):
             today = datetime.datetime.today()
-            month = month.split('.')
-            if 1 <= int(month[0]) <= 12 and int(month[1]) <= today.year:
+            date = date.split('.')
+            if 1 <= int(date[0]) <= 12 and int(date[1]) <= today.year:
                 pass
             else:
-                args[0].month = None
+                args[0].date = None
 
     return args
 
