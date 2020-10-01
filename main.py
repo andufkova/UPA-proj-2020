@@ -82,7 +82,7 @@ def transform_text_data_to_dictionary(data):
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--month', metavar='T', type=str, help='select first of 4 months to select data from')
+    parser.add_argument('--month', metavar='T', type=str, help='select first of 4 months (format MM.YYYY) to select data from')
     args = parser.parse_known_args()
 
     if args[0].month is None:
