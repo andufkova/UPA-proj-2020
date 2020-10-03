@@ -2,12 +2,16 @@ import requests
 import datetime
 import argparse
 import re
+import pandas as pd
 
+from sklearn.preprocessing import StandardScaler
 from noSQL import PymongoDatabase
+from sqlite import SQLite3database
 
 #global variables and constants
 BANK_BASE_URL = "https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/rok.txt?rok="
 LAST_4_MONTHS = 4   # if no arguments is given, or argument is invalid, get last 4 months of data
+SQLITE3_DB_FILE = 'sqlitedb.db'
 
 
 def get_data_from_bank(arguments):
@@ -99,6 +103,55 @@ def parse_args():
 
     return args
 
+def load_to_pandas(raw_data):
+    """
+    transforms raw file data from mongo database to pandas dataframe, specifies data formats (date and float)
+    :param raw_data: data from noSQL DB
+    :return: data in pandas dataframe
+    """
+    df = pd.DataFrame()
+    for coll in raw_data:
+        for currency, values in coll.items():
+            print("... loading ({})".format(currency))
+            amount = 0
+            if currency != '_id':
+                for record in values:
+                    if (record[0] == 'amount'):
+                        amount = record[1]
+                    else:
+                        val = float(record[1].replace(',', '.')) / int(amount)
+                        df = df.append({'curr': currency, 'date': record[0], 'value': val}, ignore_index=True)
+        df["date"] = pd.to_datetime(df["date"])
+        return(df)
+
+def prepare_task_1_3(sqlite, df):
+    """
+    saves data from pandas dataframe to SQLite3
+    :param sqlite: SQLite3 DB connection
+    :param df: dataframe with data
+    """
+    q_drop_existing_table = '''DROP TABLE IF EXISTS task_1_3'''
+    sqlite.execute_query(q_drop_existing_table)
+    sqlite.df_to_sql(df, 'task_1_3')
+
+def prepare_task_2(sqlite, df, selected_curr):
+    """
+    scales data and saves them from pandas dataframe to SQLite3
+    :param sqlite: SQLite3 DB connection
+    :param df: dataframe with data
+    :param selected_curr: currency chosen to examine
+    """
+    df2 = df.loc[df['curr'] == selected_curr]
+    q_drop_existing_table = '''DROP TABLE IF EXISTS task_2'''
+    sqlite.execute_query(q_drop_existing_table)
+
+    df2 = df2.copy(deep=True)
+    sc = StandardScaler()
+    df2['value'] = sc.fit_transform(df2[["value"]])
+
+    sqlite.df_to_sql(df2, 'task_2')
+
+
 if __name__ == "__main__":
     args = parse_args()
 
@@ -107,3 +160,13 @@ if __name__ == "__main__":
 
     pymongo = PymongoDatabase()
     pymongo.insert_currency_data(bank_data)
+
+    raw_data = pymongo.read_currency_data()
+    df = load_to_pandas(raw_data)
+
+    sqlite = SQLite3database(SQLITE3_DB_FILE)
+    prepare_task_1_3(sqlite, df)
+    # TODO: how to choose currency for task 2? Maybe in args?
+    prepare_task_2(sqlite, df, 'EUR')
+
+
