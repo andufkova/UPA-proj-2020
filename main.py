@@ -59,9 +59,9 @@ def transform_text_data_to_dictionary(data):
     currency_array_tmp = data.split('\n')[0].split('|')[1:]
 
     for currency in currency_array_tmp:
-        currency_id = currency.split(' ')[1]
-        currency_list.append(currency_id)
-        dict_data[currency_id] = []
+        currency_info = currency.split(' ')
+        currency_list.append(currency_info[1])
+        dict_data[currency_info[1]] = [('amount', currency_info[0])]
 
     for key in dict_data:
         key_index = 0
