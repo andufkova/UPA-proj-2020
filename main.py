@@ -4,6 +4,7 @@ import argparse
 import re
 import pandas as pd
 import dateutil
+import math
 
 from sklearn.preprocessing import StandardScaler
 from noSQL import PymongoDatabase
@@ -165,7 +166,7 @@ def prepare_task_2(sqlite, df, selected_curr):
 
 def execute_query_A1(prep_db, tab_name):
     """
-    executes query on database that will create priority list based on (increase/decrease) rate of currency
+    executes query on database that will print priority list based on (increase/decrease) rate of currency
     :prep_db: SQLite3 DB connection
     :tab_name: name of table that is prepared for queries
     """
@@ -202,8 +203,6 @@ def execute_query_A1(prep_db, tab_name):
         cur.execute(qry_get_last)
         last = cur.fetchall()[0][0]
 
-        print("res = "+ str(last - first))
-
         result = (last - first)/(first/100)
         Dict.update({row[0] : result})
 
@@ -211,19 +210,74 @@ def execute_query_A1(prep_db, tab_name):
     print_query_A1(Dict)
 
 def print_query_A1(Dict):
+    """
+    prints out results of query A1
+    :Dict: dictionary with resulting values of currency rates
+    """
     counter = 1
     print("### Priority list of currancy rates (query A1) ###")
     for item in Dict: 
         print(str(counter) + ". "+ item + ", changed by: "+ str(Dict[item]) +" %")
         counter += 1
+    print("")
 
 def execute_query_A2(prep_db, tab_name):
     """
-    executes query on database that will create \TODO something custome 
+    executes query on database that will print fluctuation in currencies 
     :prep_db: SQLite3 DB connection
     :tab_name: name of table that is prepared for queries
     """
+    cur = prep_db.connection.cursor()
+    Dict = {}
+    List = list()
 
+
+    qry_get_all_currency_names = '''
+    SELECT DISTINCT curr
+    FROM ''' + tab_name + ''';'''
+
+    cur.execute(qry_get_all_currency_names)
+    rows = cur.fetchall()
+
+    for row in rows:
+        curr = row[0]
+
+        qry_get_all_curr = '''
+        SELECT value
+        FROM '''+ tab_name +'''
+        WHERE curr = "'''+ curr +'''";
+        '''
+
+        cur.execute(qry_get_all_curr)
+        res = cur.fetchall()
+
+        for item in res:
+            List.append(item[0])
+
+        n_vals = len(res)
+        x_avg = sum_list(List) / len(List)
+
+        sum_pow = 0
+        for value in List:
+            sum_pow = math.pow(value - x_avg, 2)
+
+        Dict.update({curr: (math.sqrt((1/(n_vals-1))*sum_pow))})
+    print_query_A2(Dict)
+
+def sum_list(List):
+    sum = 0
+    for value in List:
+        sum += value
+    return sum
+
+def print_query_A2(Dict):
+    """
+    prints out results of query A1
+    :Dict: dictionary with resulting values of currency rates
+    """
+    print("### Standard deviation of currancy rates (query A2) ###")
+    for item in Dict: 
+        print(item + ", standard deviation : "+ str(Dict[item]))
 
 
 if __name__ == "__main__":
@@ -242,6 +296,8 @@ if __name__ == "__main__":
     prepare_task_1_3(sqlite, df)
     # TODO: how to choose currency for task 2? Maybe in args?
     prepare_task_2(sqlite, df, 'EUR')
+
     execute_query_A1(sqlite, "task_1_3")
+    execute_query_A2(sqlite,"task_1_3")
 
 
