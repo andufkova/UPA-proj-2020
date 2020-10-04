@@ -3,6 +3,7 @@ import datetime
 import argparse
 import re
 import pandas as pd
+import dateutil
 
 from sklearn.preprocessing import StandardScaler
 from noSQL import PymongoDatabase
@@ -103,7 +104,7 @@ def parse_args():
 
     return args
 
-def load_to_pandas(raw_data):
+def load_to_pandas(raw_data, args):
     """
     transforms raw file data from mongo database to pandas dataframe, specifies data formats (date and float)
     :param raw_data: data from noSQL DB
@@ -112,7 +113,7 @@ def load_to_pandas(raw_data):
     df = pd.DataFrame()
     for coll in raw_data:
         for currency, values in coll.items():
-            print("... loading ({})".format(currency))
+            #print("... loading ({})".format(currency))
             amount = 0
             if currency != '_id':
                 for record in values:
@@ -120,7 +121,17 @@ def load_to_pandas(raw_data):
                         amount = record[1]
                     else:
                         val = float(record[1].replace(',', '.')) / int(amount)
-                        df = df.append({'curr': currency, 'date': record[0], 'value': val}, ignore_index=True)
+                        db_date = datetime.datetime.strptime(record[0], '%d.%m.%Y')
+
+                        args_date_start = datetime.datetime.today() - dateutil.relativedelta.relativedelta(months=4)
+                        args_date_end = datetime.datetime.today()
+
+                        if args[0].date is not None:
+                            args_date_start = datetime.datetime.strptime('01.'+args[0].date, '%d.%m.%Y')
+                            args_date_end = args_date_start + dateutil.relativedelta.relativedelta(months=4)
+
+                        if (db_date >= args_date_start) and (db_date <= args_date_end):
+                            df = df.append({'curr': currency, 'date': record[0], 'value': val}, ignore_index=True)
         df["date"] = pd.to_datetime(df["date"])
         return(df)
 
@@ -162,7 +173,7 @@ if __name__ == "__main__":
     pymongo.insert_currency_data(bank_data)
 
     raw_data = pymongo.read_currency_data()
-    df = load_to_pandas(raw_data)
+    df = load_to_pandas(raw_data, args)
 
     sqlite = SQLite3database(SQLITE3_DB_FILE)
     prepare_task_1_3(sqlite, df)
