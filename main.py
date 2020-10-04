@@ -225,7 +225,7 @@ def print_query_A1(Dict):
     :Dict: dictionary with resulting values of currency rates
     """
     counter = 1
-    print("### Priority list of currancy rates (query A1) ###")
+    print("### Priority list of currency rates (query A1) ###")
     for item in Dict: 
         print(str(counter) + ". "+ item + ", changed by: "+ str(Dict[item]) +" %")
         counter += 1
@@ -279,7 +279,7 @@ def print_query_A2(Dict):
     prints out results of query A1
     :Dict: dictionary with resulting values of currency rates
     """
-    print("### Standard deviation of currancy rates (query A2) ###")
+    print("### Standard deviation of currency rates (query A2) ###")
     for item in Dict: 
         print(item + ", standard deviation : "+ str(Dict[item]))
 
