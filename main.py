@@ -134,7 +134,6 @@ def load_to_pandas(raw_data, args):
                             df = df.append({'curr': currency, 'date': record[0], 'value': val}, ignore_index=True)
 
         df["date"] = pd.to_datetime(df["date"], format='%d.%m.%Y')
-        print(df["date"])
         return(df)
 
 def prepare_task_1_3(sqlite, df):
