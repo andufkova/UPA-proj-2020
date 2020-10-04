@@ -166,6 +166,8 @@ def prepare_task_2(sqlite, df, selected_curr):
 def execute_query_A1(prep_db, tab_name):
     """
     executes query on database that will create priority list based on (increase/decrease) rate of currency
+    :prep_db: SQLite3 DB connection
+    :tab_name: name of table that is prepared for queries
     """
     cur = prep_db.connection.cursor()
     Dict = {}
@@ -200,22 +202,26 @@ def execute_query_A1(prep_db, tab_name):
         cur.execute(qry_get_last)
         last = cur.fetchall()[0][0]
 
-        result = abs(first - last)/(first/100)
+        print("res = "+ str(last - first))
+
+        result = (last - first)/(first/100)
         Dict.update({row[0] : result})
 
     Dict = {k: v for k, v in sorted(Dict.items(), key=lambda item: item[1], reverse = True)}
-    print_priority_list(Dict)
+    print_query_A1(Dict)
 
-def print_priority_list(Dict):
+def print_query_A1(Dict):
     counter = 1
     print("### Priority list of currancy rates (query A1) ###")
     for item in Dict: 
-        print(str(counter) + ". "+ item + ", changed by: "+ str(Dict[item]) +"%")
+        print(str(counter) + ". "+ item + ", changed by: "+ str(Dict[item]) +" %")
         counter += 1
 
 def execute_query_A2(prep_db, tab_name):
     """
     executes query on database that will create \TODO something custome 
+    :prep_db: SQLite3 DB connection
+    :tab_name: name of table that is prepared for queries
     """
 
 
