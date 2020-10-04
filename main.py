@@ -163,6 +163,63 @@ def prepare_task_2(sqlite, df, selected_curr):
     sqlite.df_to_sql(df2, 'task_2')
 
 
+def execute_query_A1(prep_db, tab_name):
+    """
+    executes query on database that will create priority list based on (increase/decrease) rate of currency
+    """
+    cur = prep_db.connection.cursor()
+    Dict = {}
+
+    qry_get_all_currency_names = '''
+    SELECT DISTINCT curr
+    FROM ''' + tab_name + ''';'''
+
+    cur.execute(qry_get_all_currency_names)
+    rows = cur.fetchall()
+
+    for row in rows:
+        qry_get_first = '''
+        SELECT value
+        FROM '''+ tab_name +'''
+        WHERE curr = "'''+ row[0] +'''"
+        ORDER BY date ASC
+        LIMIT 1;
+        '''
+
+        cur.execute(qry_get_first)
+        first = cur.fetchall()[0][0]
+
+        qry_get_last = '''
+        SELECT value
+        FROM '''+ tab_name +'''
+        WHERE curr = "'''+ row[0] +'''"
+        ORDER BY date DESC
+        LIMIT 1;
+        '''
+
+        cur.execute(qry_get_last)
+        last = cur.fetchall()[0][0]
+
+        result = abs(first - last)/(first/100)
+        Dict.update({row[0] : result})
+
+    Dict = {k: v for k, v in sorted(Dict.items(), key=lambda item: item[1], reverse = True)}
+    print_priority_list(Dict)
+
+def print_priority_list(Dict):
+    counter = 1
+    print("### Priority list of currancy rates (query A1) ###")
+    for item in Dict: 
+        print(str(counter) + ". "+ item + ", changed by: "+ str(Dict[item]) +"%")
+        counter += 1
+
+def execute_query_A2(prep_db, tab_name):
+    """
+    executes query on database that will create \TODO something custome 
+    """
+
+
+
 if __name__ == "__main__":
     args = parse_args()
 
@@ -179,5 +236,6 @@ if __name__ == "__main__":
     prepare_task_1_3(sqlite, df)
     # TODO: how to choose currency for task 2? Maybe in args?
     prepare_task_2(sqlite, df, 'EUR')
+    execute_query_A1(sqlite, "task_1_3")
 
 
