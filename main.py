@@ -132,7 +132,8 @@ def load_to_pandas(raw_data, args):
 
                         if (db_date >= args_date_start) and (db_date <= args_date_end):
                             df = df.append({'curr': currency, 'date': record[0], 'value': val}, ignore_index=True)
-        df["date"] = pd.to_datetime(df["date"])
+
+        df["date"] = pd.to_datetime(df["date"], format='%d.%m.%Y')
         return(df)
 
 def prepare_task_1_3(sqlite, df):
