@@ -163,6 +163,19 @@ def prepare_task_2(sqlite, df, selected_curr):
 
     sqlite.df_to_sql(df2, 'task_2')
 
+def get_currancy_names(prep_db, tab_name):
+    List = list()
+    cur = prep_db.connection.cursor()
+
+    qry_get_all_currency_names = '''
+    SELECT DISTINCT curr
+    FROM ''' + tab_name + ''';'''
+
+    cur.execute(qry_get_all_currency_names)
+    rows = cur.fetchall()
+    for row in rows:
+        List.append(row[0])
+    return List
 
 def execute_query_A1(prep_db, tab_name):
     """
@@ -173,18 +186,15 @@ def execute_query_A1(prep_db, tab_name):
     cur = prep_db.connection.cursor()
     Dict = {}
 
-    qry_get_all_currency_names = '''
-    SELECT DISTINCT curr
-    FROM ''' + tab_name + ''';'''
+    names = get_currancy_names(prep_db, tab_name)
 
-    cur.execute(qry_get_all_currency_names)
-    rows = cur.fetchall()
+    
 
-    for row in rows:
+    for item in names:
         qry_get_first = '''
         SELECT value
         FROM '''+ tab_name +'''
-        WHERE curr = "'''+ row[0] +'''"
+        WHERE curr = "'''+ item +'''"
         ORDER BY date ASC
         LIMIT 1;
         '''
@@ -195,7 +205,7 @@ def execute_query_A1(prep_db, tab_name):
         qry_get_last = '''
         SELECT value
         FROM '''+ tab_name +'''
-        WHERE curr = "'''+ row[0] +'''"
+        WHERE curr = "'''+ item +'''"
         ORDER BY date DESC
         LIMIT 1;
         '''
@@ -204,7 +214,7 @@ def execute_query_A1(prep_db, tab_name):
         last = cur.fetchall()[0][0]
 
         result = (last - first)/(first/100)
-        Dict.update({row[0] : result})
+        Dict.update({item : result})
 
     Dict = {k: v for k, v in sorted(Dict.items(), key=lambda item: item[1], reverse = True)}
     print_query_A1(Dict)
@@ -230,22 +240,16 @@ def execute_query_A2(prep_db, tab_name):
     cur = prep_db.connection.cursor()
     Dict = {}
     List = list()
+    names = get_currancy_names(prep_db, tab_name)
 
 
-    qry_get_all_currency_names = '''
-    SELECT DISTINCT curr
-    FROM ''' + tab_name + ''';'''
 
-    cur.execute(qry_get_all_currency_names)
-    rows = cur.fetchall()
-
-    for row in rows:
-        curr = row[0]
+    for name in names:
 
         qry_get_all_curr = '''
         SELECT value
         FROM '''+ tab_name +'''
-        WHERE curr = "'''+ curr +'''";
+        WHERE curr = "'''+ name +'''";
         '''
 
         cur.execute(qry_get_all_curr)
@@ -261,7 +265,7 @@ def execute_query_A2(prep_db, tab_name):
         for value in List:
             sum_pow = math.pow(value - x_avg, 2)
 
-        Dict.update({curr: (math.sqrt((1/(n_vals-1))*sum_pow))})
+        Dict.update({name: (math.sqrt((1/(n_vals-1))*sum_pow))})
     print_query_A2(Dict)
 
 def sum_list(List):
