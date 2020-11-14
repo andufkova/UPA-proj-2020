@@ -267,6 +267,8 @@ def execute_query_A2(prep_db, tab_name):
             sum_pow = math.pow(value - x_avg, 2)
 
         Dict.update({name: (math.sqrt((1/(n_vals-1))*sum_pow))})
+
+    Dict = Dict = {k: v for k, v in sorted(Dict.items(), key=lambda item: item[1], reverse = False)}
     print_query_A2(Dict)
 
 def sum_list(List):
