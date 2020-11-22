@@ -32,7 +32,7 @@ def get_last_4_months():
     if today.month < LAST_4_MONTHS:  # handle situation, when months from last year are needed
         bank_url = BANK_BASE_URL + str(today.year - 1)
         result = requests.get(url=bank_url).text
-        bank_currency_data.append(result)  # remove header from second GET call so we dont have it twice in our data
+        bank_currency_data.append(result)
 
     return bank_currency_data
 
@@ -45,9 +45,9 @@ def get_4_months(date):
     bank_currency_data = [requests.get(url=bank_url).text]
 
     if int(date[0]) < LAST_4_MONTHS:
-        bank_url = BANK_BASE_URL + str(int(date[1]) + 1)
+        bank_url = BANK_BASE_URL + str(int(date[1]) - 1)
         result = requests.get(url=bank_url).text
-        bank_currency_data.append(result)  # remove header from second GET call so we dont have it twice in our
+        bank_currency_data.append(result)
 
     return bank_currency_data
 
