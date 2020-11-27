@@ -5,6 +5,7 @@ import re
 import pandas as pd
 import dateutil
 import math
+# import matplotlib.pyplot as plt
 
 from sklearn.preprocessing import StandardScaler
 from noSQL import PymongoDatabase
@@ -12,8 +13,9 @@ from sqlite import SQLite3database
 
 #global variables and constants
 BANK_BASE_URL = "https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/rok.txt?rok="
-LAST_4_MONTHS = 4   # if no arguments is given, or argument is invalid, get last 4 months of data
+LAST_4_MONTHS = 4   # if no argument is given, or argument is invalid, get last 4 months of data
 SQLITE3_DB_FILE = 'sqlitedb.db'
+CURR_TASK_2 = 'EUR'
 
 
 def get_data_from_bank(arguments):
@@ -53,7 +55,7 @@ def get_4_months(date):
 
 def transform_text_data_to_dictionary(data):
     """
-    transforms text file data from bank server to dictionary(json), which is required by monogo database
+    transforms text file data from bank server to dictionary(json), which is required by mongo database
     :param data: in form of pure text in list
     :return: dictionary containing all data
     """
@@ -114,9 +116,15 @@ def load_to_pandas(raw_data, args):
     :return: data in pandas dataframe
     """
     df = pd.DataFrame()
+    args_date_start = datetime.datetime.today() - dateutil.relativedelta.relativedelta(months=4)
+    args_date_end = datetime.datetime.today()
+
+    if args[0].date is not None:
+        args_date_end = datetime.datetime.strptime('01.' + args[0].date, '%d.%m.%Y') + dateutil.relativedelta.relativedelta(months=1)
+        args_date_start = args_date_end - dateutil.relativedelta.relativedelta(months=4)
+
     for coll in raw_data:
         for currency, values in coll.items():
-            #print("... loading ({})".format(currency))
             amount = 0
             if currency != '_id':
                 for record in values:
@@ -124,19 +132,14 @@ def load_to_pandas(raw_data, args):
                         amount = record[1]
                     else:
                         val = float(record[1].replace(',', '.')) / int(amount)
+
                         db_date = datetime.datetime.strptime(record[0], '%d.%m.%Y')
 
-                        args_date_start = datetime.datetime.today() - dateutil.relativedelta.relativedelta(months=4)
-                        args_date_end = datetime.datetime.today()
-
-                        if args[0].date is not None:
-                            args_date_start = datetime.datetime.strptime('01.'+args[0].date, '%d.%m.%Y')
-                            args_date_end = args_date_start + dateutil.relativedelta.relativedelta(months=4)
-
-                        if (db_date >= args_date_start) and (db_date <= args_date_end):
-                            df = df.append({'curr': currency, 'date': record[0], 'value': val}, ignore_index=True)
+                        if (db_date >= args_date_start) and (db_date < args_date_end):
+                           df = df.append({'curr': currency, 'date': record[0], 'value': val}, ignore_index=True)
 
         df["date"] = pd.to_datetime(df["date"], format='%d.%m.%Y')
+        #print(df["curr"].describe())
         return(df)
 
 def prepare_task_1_3(sqlite, df):
@@ -160,13 +163,23 @@ def prepare_task_2(sqlite, df, selected_curr):
     q_drop_existing_table = '''DROP TABLE IF EXISTS task_2'''
     sqlite.execute_query(q_drop_existing_table)
 
+    """
+    df2.plot(kind='line', x='date', y='value')
+    plt.show()
+    """
+
     df2 = df2.copy(deep=True)
     sc = StandardScaler()
     df2['value'] = sc.fit_transform(df2[["value"]])
 
+    """
+    df2.plot(kind='line', x='date', y='value')
+    plt.show()
+    """
+
     sqlite.df_to_sql(df2, 'task_2')
 
-def get_currancy_names(prep_db, tab_name):
+def get_currency_names(prep_db, tab_name):
     List = list()
     cur = prep_db.connection.cursor()
 
@@ -189,7 +202,7 @@ def execute_query_A1(prep_db, tab_name):
     cur = prep_db.connection.cursor()
     Dict = {}
 
-    names = get_currancy_names(prep_db, tab_name)
+    names = get_currency_names(prep_db, tab_name)
 
     
 
@@ -243,7 +256,7 @@ def execute_query_A2(prep_db, tab_name):
     cur = prep_db.connection.cursor()
     Dict = {}
     List = list()
-    names = get_currancy_names(prep_db, tab_name)
+    names = get_currency_names(prep_db, tab_name)
 
 
 
@@ -301,12 +314,25 @@ if __name__ == "__main__":
     raw_data = pymongo.read_currency_data()
     df = load_to_pandas(raw_data, args)
 
+    """
+    dfEUR = df.loc[df['curr'] == 'EUR']
+    df.loc[:, 'month'] = dfEUR['date'].dt.month
+    df.boxplot(by ='month', column =['value'], grid = False)
+    plt.show()
+    """
+
+    """
+    dfBRL = df.loc[df['curr'] == 'BRL']
+    dfBRL.plot(kind='line', x='date', y='value')
+    plt.show()
+    """
+
+
     sqlite = SQLite3database(SQLITE3_DB_FILE)
     prepare_task_1_3(sqlite, df)
-    # TODO: how to choose currency for task 2? Maybe in args?
-    prepare_task_2(sqlite, df, 'EUR')
+    prepare_task_2(sqlite, df, CURR_TASK_2)
 
     execute_query_A1(sqlite, "task_1_3")
-    execute_query_A2(sqlite,"task_1_3")
+    execute_query_A2(sqlite, "task_1_3")
 
 
